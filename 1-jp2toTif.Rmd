@@ -1,0 +1,63 @@
+---
+title: 'Remote sensing and image processing: script to transform from .jp2 images
+  to .tif images'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+## Packages needed:
+
+```{r "setup", include=T}
+if ( ! require("rgdal") )       { install.packages("rgdal");            library("rgdal")      }
+if ( ! require("raster") )   { install.packages("raster");        library("raster")  }
+```
+
+# Load the jp2 images:
+```{r After download: merge layer stack}
+root = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data'
+folder = 'S2A_MSIL2A_20180705T100031_N0208_R122_T33UXP_20180705T130953_20m/R20m'
+images_path = file.path(root,folder)
+filelist  <- list.files(path = images_path,pattern = '20m.jp2',full.names = TRUE)
+filelist
+```
+
+# Merge layer stack:
+```{r merge layer stack}
+select<- paste(c('B02', 'B03', 'B04','B05','B06','B07','B8A', 'B11', 'B12'),collapse="|")
+filelist<-grep(select, filelist , value=TRUE, fixed = FALSE)
+filelist
+```
+
+# Order the bands:
+```{r order}
+filelist <- filelist[c(1,2,3,4,5,6,9,7,8)] 
+filelist
+```
+
+# Select and save tiff images per bands:
+```{r Select the bands to save like tiff images:}
+band_names <- c('B02', 'B03', 'B04','B05','B06','B07','B8A', 'B11', 'B12')
+
+folder_out = 'tif'
+folder_output = file.path(root,folder_out)
+for (i in seq_along(filelist)){
+  print(paste('Saving band',band_names[i]))
+  input  <- filelist[i]
+  s2a <- readGDAL(input)
+  output <- paste(folder_output, '/',band_names[i],'.tif', sep = "")
+  rf <- writeRaster(stack(s2a), filename=output, format="GTiff", overwrite=TRUE)
+  folder_out = 'tif'
+  print('Done!')
+}
+```
+# Select and save tiff images per bands:
+```{r Take all the bands to stack them:}
+
+file = 'Sentinel2.tif'
+output = file.path(folder_output,file)
+temp_stack = stack(filelist)
+rf <- writeRaster(temp_stack, filename=output, format="GTiff", overwrite=TRUE)
+
+```
