@@ -1,0 +1,76 @@
+---
+title: 'Remote sensing and image processing: How to work with rasters'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+## Packages needed:
+
+```{r setup, include=T}
+if ( ! require("raster") )       { install.packages("raster");            library("raster")      }
+```
+
+# Load Rasters:
+
+```{r load, include=T}
+
+#tif_images_path = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data/tif'
+#infls<-list.files(path = tif_images_path, pattern = '*.tif$',full.names = TRUE)
+#temp_stack<-stack(infls)
+#temp_stack
+# Load the image:
+tif_input = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data/tif/Sentinel2.tif'
+temp_stack<-stack(tif_input)
+temp_stack
+```
+# Change band names:
+
+```{r names, include=T}
+band_names <- c('B02', 'B03', 'B04','B05','B06','B07','B8A', 'B11', 'B12')
+for(i in 1:length(band_names)) {names(temp_stack)[i]=band_names[i]}
+temp_stack
+```
+
+# Plotting rasters:
+
+## 1- RGB plotting:
+
+```{r pressure, echo=T}
+plotRGB(temp_stack, 3,2,1, stretch = 'lin',axes=T)
+```
+
+## 2- Crop the images and plot them:
+
+Note that the dimensions change:
+```{r, echo=T}
+crop_temp_stack<-crop(temp_stack, extent(temp_stack, 3001, 4000, 2501, 3500))
+crop_temp_stack
+```
+Plot the RGB crop:
+```{r}
+plotRGB(crop_temp_stack, 3,2,1, stretch = 'lin',axes=T)
+```
+# Exercise 2:
+```{r Exercise 2, echo =T}
+# Calculate NDVI and plot the NDVI and its histogram and upload it in Boku learn, Exercise 8..
+
+# compute NDVI
+crop_ndvi <- (crop_temp_stack$B8A - crop_temp_stack$B04) / (crop_temp_stack$B8A + crop_temp_stack$B04)
+
+# plot NDVI
+cuts <- c(seq(-1,1,0.1)) #set breaks
+pal <- colorRampPalette(c("red","yellow","darkgreen"))
+plot(crop_ndvi,breaks=cuts, col = pal(21))
+
+# plot histogram
+hist(crop_ndvi,
+     main="NDVI histogram", 
+     xlab="NDVI",
+     col="darkgreen")
+
+# write tif
+out_path = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data/tif/NDVI.tif'
+rf <- writeRaster(crop_ndvi, filename=out_path, format="GTiff", overwrite=TRUE)
+```
