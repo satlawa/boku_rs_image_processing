@@ -1,0 +1,86 @@
+---
+title: 'Remote sensing and image processing: How to work with vector Layers'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+## Packages needed:
+
+```{r, echo=TRUE}
+if ( ! require("raster") )    { install.packages("raster");       library("raster")}
+if ( ! require("rgdal") )    { install.packages("rgdal");       library("rgdal")}
+```
+
+## Load the shapefile:
+
+```{r shpfile}
+root   = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data'
+folder = 'Region_of_interest/'
+file   = 'bbox_region_of_interest.shp'
+shpfile = file.path(root, folder, file)
+
+shapefile_data <- shapefile(shpfile)
+```
+
+A-Print the shapefile information:
+```{r shpfile2, echo=F}
+shapefile_data
+```
+
+B-Use the shpfile information:
+```{r footprint, echo=TRUE}
+# Obtain the footprint coordinates:
+bbox <- extent(shapefile_data)
+bbox
+plot(bbox,xlab="",ylab="",main = "footprint coordinates",col=rgb(0.1,0.7,0.1,0.8))
+```
+
+```{r CRS, echo=TRUE}
+# Obtain the Coordinates Reference System (CRS):
+reference_system = crs(shapefile_data)
+reference_system
+```
+```{r CRS info, echo=TRUE}
+# Meaning of the Coordinates Reference System (CRS):
+# +proj=utm: the projection is UTM, UTM has several zones
+# +zone=33: the zone is 33 which is Austria
+# datum=WGS84: the datum WGS84 (the datum refers to the 0,0 reference for the coordinate
+# system used in the projection)
+# +units=m: the units for the coordinates are in METERS
+# +ellps=WGS84: the ellipsoid (how the earth’s roundness is calculated) for the data is
+# WGS84
+```
+
+```{r id, echo=TRUE}
+ID_features = shapefile_data$id
+length(ID_features)
+```
+
+## Plot vector layer:
+
+```{r plot shpfile, echo=TRUE}
+plot(shapefile_data,
+     main = "Shapefile imported into R",
+     axes = TRUE,
+     border = "blue")
+```
+
+# Exercise 3:
+
+```{r Exercise 3, echo=T}
+# Crop the image of exercise 2 (3-Work_with_Rasters) using the vector layer and upload it in Boku learn, Exercise 8.
+
+# read raster
+tif_input = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data/tif/Sentinel2.tif'
+raster_stack<-stack(tif_input)
+
+# crop raster by vector (shp)
+crop_raster_stack<-crop(raster_stack, extent(shapefile_data))
+dim(crop_raster_stack)
+
+# write tif
+out_path = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data/tif/raster_crop.tif'
+rf <- writeRaster(crop_raster_stack, filename=out_path, format="GTiff", overwrite=TRUE)
+```
