@@ -1,0 +1,120 @@
+---
+title: "Decision tree"
+output:
+  html_document:
+    df_print: paged
+---
+
+## Packages needed:
+
+```{r, echo=TRUE}
+if ( ! require("raster") )       { install.packages("raster");       library("raster")}
+if ( ! require("rpart") )        { install.packages("rpart");        library("rpart")}
+if ( ! require("rpart.plot") )   { install.packages("rpart.plot");   library("rpart.plot")}
+```
+
+## Load the data:
+
+1-The data is loaded using read.csv function:
+```{r load csv files, echo=T}
+root = 'C:\\Users\\Emma\\Documents\\cursos\\Impartidos\\2021_RSandIP\\R_scripts\\data\\'
+file = "data_classification.csv"
+csv_file = file.path(root, file)
+MyData <- read.csv(file=csv_file, header=TRUE, sep=",")
+MyData[1:10,1:dim(MyData)[2]]
+classes = sort(unique(MyData[,2]))
+```
+We can know how many samples there are in the table:
+```{r}
+sprintf('total set contains %s samples and %s features with %s classes', dim(MyData)[1], dim(MyData)[2],length(classes))
+```
+
+# 2. Split the data:
+```{r Find the indeces of the samples to training and test:}
+set.seed(3333)
+ind = sample(dim(MyData)[1])
+percen = 4
+ind_tr = ind[1:(dim(MyData)[1]*percen/100)]
+ind_ts = ind[((dim(MyData)[1]*percen/100)+1):dim(MyData)[1]]
+```
+
+We can know the number of samples in the training set:
+```{r Select a percentage of the original data and generate training subsets:}
+X_tr = MyData[ind_tr,2:11]
+sprintf('training set contains %s samples and %s features', dim(X_tr)[1], dim(X_tr)[2])
+```
+
+We can know the number of samples in the test set:
+```{r Select a percentage of the original data and generate test subsets:}
+X_ts = MyData[ind_ts,2:11]
+sprintf('Test subset contains %s samples and %s features', dim(X_ts)[1], dim(X_ts)[2])
+```
+
+```{r}
+# CART model
+tree = rpart(class_id ~ ., data=X_tr,method = 'class', control = list(maxdepth = 9))
+prp(tree)
+```
+
+```{r }
+tree.pred = predict(tree, newdata=X_ts)
+#classes = unique(X_ts[,1])
+Y_pred = classes[max.col(tree.pred)]
+
+#function
+accuracy <- function (pred,actual)
+{
+    conf_matrix <- table(predictions = pred, actual = actual)
+    sum <- 0
+    for (j in 1:dim(conf_matrix)[2])
+        for (i in 1:dim(conf_matrix)[1])
+            if (j == i)
+                sum<-sum+conf_matrix[i,j]
+    return(list(conf_matrix,sum/length(pred)*100))
+}
+predictions <- data.frame(predicted = Y_pred, ground_true = X_ts[,1])
+accuracy(predictions$predicted, predictions$ground_true)
+```
+```{r We apply the model on the Sentinel-2 image using the predict function and save the results as a new raster:}
+
+# Load the image:
+tif_input = 'C:\\Users\\Emma\\Documents\\cursos\\Impartidos\\2021_RSandIP\\R_scripts\\data\\tif\\Sentinel2.tif'
+temp_stack<-stack(tif_input)
+    plotRGB(temp_stack, 3,2,1, stretch = 'lin',axes = TRUE)
+```
+
+```{r Select a tile from the image:}
+e<-extent(601000, 610000, 5303000, 5310000)
+crop_stack<-crop(temp_stack,e)
+plotRGB(crop_stack, 3,2,1, stretch = 'lin',axes=TRUE)
+```
+
+```{r Select the bands of the image. ATENTION: the order has to be the same than the ttraining data}
+names(crop_stack) <- c('B02', 'B03', 'B04','B05','B06','B07','B8A', 'B11', 'B12')
+crop_stack
+```
+
+```{r Predict the tile}
+classraster <- predict(tree, newdata=data.frame(values(crop_stack)))
+classraster = classes[max.col(classraster)]
+print('classraster has to be a raster')
+```
+
+```{r Tansfor the results to a raster}
+pred_raster <- raster(crop_stack)
+pred_raster[] <- classraster
+
+# plot reclassified data
+plot(pred_raster,
+     col = rainbow(9),
+     breaks = c(1, 2, 3, 4, 5, 6, 7,8, 9), 
+     axes = TRUE,
+     box = FALSE,
+     main = "Classification map")
+```
+
+# Exercise 5: Accuracy assessment of decision tree classifier:
+```{r Exercise 5, echo=T}
+# Upload a figure which shows the changes of accuracy of decision tree versus the number of training samples of the classifier. Include the number of samples per class used in a figure title.
+# Upload it in boku learn exercise 10. 
+```
