@@ -1,0 +1,105 @@
+---
+title: "Minimum distance classifier"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+## Load the data
+
+1-The data is loaded using read.csv function:
+```{r load csv files, echo=T}
+root = '/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data'
+file = "data_classification.csv"
+csv_file = file.path(root, file)
+MyData <- read.csv(file=csv_file, header=TRUE, sep=",")
+MyData[1:15,1:dim(MyData)[2]]
+```
+We can know how many samples there are in the table:
+```{r}
+sprintf('total set contains %s samples and %s features', dim(MyData)[1], dim(MyData)[2])
+```
+
+## 2. Split the data:
+```{r Find the indeces of the samples to training and test:}
+set.seed(3333)
+ind = sample(dim(MyData)[1])
+percen = 75
+ind_tr = ind[1:(dim(MyData)[1]*percen/100)]
+length(ind_tr)
+ind_ts = ind[((dim(MyData)[1]*percen/100)+1):dim(MyData)[1]]
+length(ind_ts)
+```
+
+We can know the number of samples in the training set:
+```{r Select a percentage of the original data and generate balanced training subsets:}
+X_tr = MyData[ind_tr,3:11]
+Y_tr = MyData[ind_tr,2]
+sprintf('training set contains %s samples and %s features', dim(X_tr)[1], dim(X_tr)[2])
+```
+
+We can know the number of samples in the test set:
+```{r Select a percentage of the original data and generate balanced test subsets:}
+X_ts = MyData[ind_ts,3:11]
+Y_ts = MyData[ind_ts,2]
+sprintf('Test subset contains %s samples and %s features', dim(X_ts)[1], dim(X_ts)[2])
+```
+
+## 3. Minimum distance classifier:
+
+```{r n-dimansionality mean per class:}
+mean_cl <- NULL
+classes = unique(Y_tr)
+for (cl in seq(1,length(classes),1)) {
+        ind_cl = which(Y_tr %in% classes[cl])
+        mean_cls = sapply(X_tr[ind_cl,1:dim(X_tr)[2]], mean, na.rm = TRUE)
+        mean_cl <-rbind(mean_cl,mean_cls) 
+}
+mean_cl
+
+```
+Minimum distance regarding to the mean: minimum distance from the training mean: The classifier will assign the class of the group which its mean is closed to the test sample:
+```{r B-minimum distance classifier}
+  #Calculating distances
+prediction <- NULL
+X_train <- as.matrix(X_tr)
+X_test <- as.matrix(X_ts)
+m <- dim(mean_cl)[1]
+n <- dim(X_test)[1]
+
+for (j in 1:n)
+{
+    dist_cl <- sqrt(rowSums((as.matrix(mean_cl) - t(replicate(m, X_test[j,])))^2, 
+                            na.rm = TRUE))
+    Y_pred = classes[which.min(dist_cl)]
+    prediction<-cbind(prediction,Y_pred)
+}
+prediction <- (t(prediction))
+
+#Predicting
+predictions <- data.frame(predicted = prediction, ground_true = Y_ts)
+
+```
+
+# Assessment:
+```{r A-Confusion matrix:}
+#function
+accuracy <- function (pred,actual)
+{
+    conf_matrix <- table(predictions = pred, actual = actual)
+    sum <- 0
+    for (j in 1:dim(conf_matrix)[2])
+        for (i in 1:dim(conf_matrix)[1])
+            if (j == i)
+                sum<-sum+conf_matrix[i,j]
+    return(list(conf_matrix,sum/length(pred)*100))
+}
+
+accuracy(predictions$predicted,predictions$ground_true)
+```
+
+# Exercise 4:
+```{r Exercise 4, echo=T}
+# Use the minimum distance classifier with a training set that have equal number of samples per class and upload it in Boku learn, Exercise 9.
+```

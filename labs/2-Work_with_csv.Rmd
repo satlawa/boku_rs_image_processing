@@ -1,0 +1,109 @@
+---
+title: 'Remote sensing and image processing: how to load csv files'
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+## Load the data
+
+1-The data is loaded using read.csv function:
+
+```{r load csv files, echo=T}
+folder = "/home/philipp/Documents/boku/remote_sensing_image_processing/lecture_5_classification/data"
+csv_file="data_classification.csv"
+root = file.path(folder,csv_file)
+MyData <- read.csv(file=root, header=TRUE, sep=",")
+```
+
+# Data visualization
+
+1-It is possible visualize the Table:
+
+```{r see what are inside of MyData, echo=TRUE}
+MyData[1:15,1:dim(MyData)[2]]
+```
+# A-Plot the histograms of the classes:
+
+```{r Histogram of the classes, echo=T}
+h<-hist(MyData[1:dim(MyData)[1],2],
+     main="Histogram for classes", 
+     xlab="Classes", 
+     border="blue", 
+     col="red",
+     xlim=c(0,10),
+     ylim=c(0,2300),
+     breaks=20)
+text(h$mids,h$counts,labels=h$counts, adj=c(0.5, -0.5))
+```
+
+# B-Plot the reflectance average per class:
+B1.1- Find the reflectances for class 1:
+```{r find the reflectances for class 1, echo=T}
+# index positions of class 1 in csv file:
+ind_cl_1 = which(MyData[1:dim(MyData)[1],2] == 1)
+length(ind_cl_1)
+```
+
+B1.2- Calculate the average of reflectances for class 1:
+```{r Calculate the average of reflectances for class 1, echo=T}
+# Average of all pixel class 1 values per band:  
+mean_cl = sapply(MyData[ind_cl_1,3:dim(MyData)[2]], mean, na.rm = TRUE)
+mean_cl
+``` 
+
+B1.3- Plot the average of reflectances for class 1:
+```{r Plot the average of reflectances for class 1, echo=T}
+plot(mean_cl, ylim=c(300,4000),type="b" , lwd=3 , col=rgb(0.1,0.7,0.1,0.8),
+     ylab="reflectance" , xlab="Bands" , bty="l" , pch=20 , cex=2, xaxt="n")
+grid (NULL,NULL, lty = 6, col = "cornsilk2")
+axis(1, at=seq(1,9,1),labels=c("B2", "B3", "B4","B5","B6","B7","B8A","B11","B12"), las=0)
+legend(x=1, y=4000,legend="Class 1", pch=20, col=rgb(0.1,0.7,0.1,0.8),text.font=3, 
+       lty=c(1,1,1,1,1,1,1), cex=0.7, horiz = F, xpd=TRUE)
+ 
+```
+
+B2.1- Find the reflectances for class 2:
+```{r find the reflectances for class 2, echo=T}
+# index positions of class 1 in csv file:
+ind_cl_2 = which(MyData[1:dim(MyData)[1],2] %in% 7)
+length(ind_cl_2)
+```
+
+B1.2- Calculate the average of reflectances for class 2:
+```{r Calculate the average of reflectances for class 2, echo=T}
+# Average of all pixel class 1 values per band:  
+mean_cl = sapply(MyData[ind_cl_2,3:dim(MyData)[2]], mean, na.rm = TRUE)
+mean_cl
+``` 
+
+B1.3- Plot the average of reflectances for class 2:
+```{r Plot the average of reflectances for class 2, echo=T}
+plot(mean_cl, ylim=c(300,4000),type="b" , lwd=3 , col=rgb(0.7,0.7,0.1,0.8),
+     ylab="reflectance" , xlab="Bands" , bty="l" , pch=20 , cex=2, xaxt="n")
+grid (NULL,NULL, lty = 6, col = "cornsilk2")
+axis(1, at=seq(1,9,1),labels=c("B2", "B3", "B4","B5","B6","B7","B8A","B11","B12"), las=0)
+legend(x=1, y=4000,legend="Class 2", pch=20, col=rgb(0.7,0.7,0.1,0.8),text.font=3, 
+       lty=c(1,1,1,1,1,1,1), cex=0.7, horiz = F, xpd=TRUE)
+```
+
+# Exercise 1:
+```{r Exercise 1, echo=T}
+# Plot of average of reflectances for all the classes and upload it in Boku learn, Exercise 8.
+for (i in 1:max(MyData$class_id)) {
+  # filter class
+  ind_cl = which(MyData[1:dim(MyData)[1],2] == i)
+  # Average of all pixel class 1 values per band:  
+  mean_cl = sapply(MyData[ind_cl,3:dim(MyData)[2]], mean, na.rm = TRUE)
+  # create string for legend
+  class_i <- paste("Class", i, sep =" ")
+  # plot mean reflectance
+  plot(mean_cl, ylim=c(300,7000),type="b" , lwd=3 , col=i,#rgb(0.7,0.7,0.1,0.8),
+      ylab="reflectance" , xlab="Bands" , bty="l" , pch=20 , cex=2, xaxt="n")
+  grid (NULL,NULL, lty = 6, col = "cornsilk2")
+  axis(1, at=seq(1,9,1),labels=c("B2", "B3", "B4","B5","B6","B7","B8A","B11","B12"), las=0)
+  legend(x=1, y=4000,legend=class_i, pch=20, col=i, text.font=3, 
+         lty=c(1,1,1,1,1,1,1), cex=0.7, horiz = F, xpd=TRUE)
+}
+```
